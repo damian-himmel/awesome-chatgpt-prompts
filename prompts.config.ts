@@ -1,20 +1,20 @@
 import { defineConfig } from "@/lib/config";
 
 // Set to true to use clone branding (hide prompts.chat repo branding)
-const useCloneBranding = false;
+const useCloneBranding = true;
 
 export default defineConfig({
   // Branding - customize for white-label
   branding: {
-    name: "prompts.chat",
+    name: "prompts.himmel",
     logo: "/logo.svg",
     logoDark: "/logo-dark.svg",
     favicon: "/logo.svg",
-    description: "Collect, organize, and share AI prompts",
+    description: "Prompt Library",
 
     // Delete this if useCloneBranding is true
-    appStoreUrl: "https://apps.apple.com/tr/app/prompts-chat/id6756895736",
-    chromeExtensionUrl: "https://chromewebstore.google.com/detail/promptschat/eemdohkhbaifiocagjlhibfbhamlbeej",
+    // appStoreUrl: "https://apps.apple.com/tr/app/prompts-chat/id6756895736",
+    // chromeExtensionUrl: "https://chromewebstore.google.com/detail/promptschat/eemdohkhbaifiocagjlhibfbhamlbeej",
   },
 
   // Theme - design system configuration
@@ -27,7 +27,7 @@ export default defineConfig({
     density: "default",
     // Colors (hex or oklch)
     colors: {
-      primary: "#6366f1", // Indigo
+      primary: "#14919B", // Teal
     },
   },
 
@@ -35,15 +35,15 @@ export default defineConfig({
   auth: {
     // Available: "credentials" | "google" | "azure" | "github" | "apple" | custom
     // Use `providers` array to enable multiple auth providers
-    providers: ["github", "google", "apple"],
+    // providers: ["github", "google", "apple"],
     // Allow public registration (only applies to credentials provider)
-    allowRegistration: false,
+    allowRegistration: true,
   },
 
   // Internationalization
   i18n: {
-    locales: ["en", "tr", "es", "zh", "ja", "ar", "pt", "fr", "it", "de", "nl", "ko", "ru", "he", "el", "az", "fa"],
-    defaultLocale: "en",
+    locales: ["en", "de"],
+    defaultLocale: "de",
   },
 
   // Features
