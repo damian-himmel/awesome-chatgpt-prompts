@@ -6,11 +6,11 @@ const useCloneBranding = true;
 export default defineConfig({
   // Branding - customize for white-label
   branding: {
-    name: "prompts.himmel",
+    name: "Prompt Library",
     logo: "/logo.svg",
     logoDark: "/logo-dark.svg",
     favicon: "/logo.svg",
-    description: "Prompt Library",
+    description: "My personal prompt collection",
 
     // Delete this if useCloneBranding is true
     // appStoreUrl: "https://apps.apple.com/tr/app/prompts-chat/id6756895736",
