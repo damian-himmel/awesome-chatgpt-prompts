@@ -78,9 +78,9 @@ if [ ! -f "$BUILD_MARKER" ]; then
     echo "✓ Dependencies installed"
     
     # Run docker-setup.js to generate config with branding
-    echo "▶ Generating configuration..."
-    node scripts/docker-setup.js
-    echo "✓ Configuration generated"
+    # echo "▶ Generating configuration..."
+    # node scripts/docker-setup.js
+    # echo "✓ Configuration generated"
     
     # Generate Prisma client
     echo "▶ Generating Prisma client..."
