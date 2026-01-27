@@ -20,7 +20,7 @@ export default defineConfig({
   // Theme - design system configuration
   theme: {
     // Border radius: "none" | "sm" | "md" | "lg"
-    radius: "sm",
+    radius: "lg",
     // UI style: "flat" | "default" | "brutal"
     variant: "default",
     // Spacing density: "compact" | "default" | "comfortable"
