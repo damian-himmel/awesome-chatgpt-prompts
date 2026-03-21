@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Upload, X, ArrowDown, Play, Image as ImageIcon, Video, Volume2, Paperclip, Search, Sparkles, BookOpen, ExternalLink, ChevronDown, Settings2 } from "lucide-react";
+import { Loader2, Upload, X, ArrowDown, Image as ImageIcon, Video, Volume2, Paperclip, Search, Sparkles, BookOpen, ExternalLink, ChevronDown, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { VariableToolbar } from "./variable-toolbar";
 import { VariableWarning } from "./variable-warning";
@@ -21,17 +21,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
-  parseSkillFiles,
-  serializeSkillFiles,
-  getLanguageFromFilename,
-  validateFilename,
-  suggestFilename,
   generateSkillContentWithFrontmatter,
   updateSkillFrontmatter,
   validateSkillFrontmatter,
   DEFAULT_SKILL_FILE,
-  DEFAULT_SKILL_CONTENT,
-  type SkillFile,
 } from "@/lib/skill-files";
 import {
   Form,
@@ -61,7 +54,7 @@ import { toast } from "sonner";
 import { prettifyJson } from "@/lib/format";
 import { analyticsPrompt } from "@/lib/analytics";
 import { getPromptUrl } from "@/lib/urls";
-import { AI_MODELS, getModelsByProvider, type PromptMCPConfig } from "@/lib/works-best-with";
+import { AI_MODELS, getModelsByProvider } from "@/lib/works-best-with";
 
 interface MediaFieldProps {
   form: ReturnType<typeof useForm<PromptFormValues>>;
@@ -351,7 +344,7 @@ const createPromptSchema = (t: (key: string) => string) => z.object({
   title: z.string().min(1, t("titleRequired")).max(200),
   description: z.string().max(500).optional(),
   content: z.string().min(1, t("contentRequired")),
-  type: z.enum(["TEXT", "IMAGE", "VIDEO", "AUDIO", "SKILL"]), // Output type or SKILL
+  type: z.enum(["TEXT", "IMAGE", "VIDEO", "AUDIO", "SKILL", "TASTE"]), // Output type, SKILL, or TASTE
   structuredFormat: z.enum(["JSON", "YAML"]).optional(),
   categoryId: z.string().optional(),
   tagIds: z.array(z.string()),
@@ -365,6 +358,7 @@ const createPromptSchema = (t: (key: string) => string) => z.object({
     command: z.string(),
     tools: z.array(z.string()).optional(),
   })).optional(),
+  workflowLink: z.string().url().optional().or(z.literal("")),
 }).superRefine((data, ctx) => {
   if (data.type === "SKILL") {
     const frontmatterError = validateSkillFrontmatter(data.content);
@@ -459,6 +453,7 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
       requiredMediaCount: initialData?.requiredMediaCount || 1,
       bestWithModels: initialData?.bestWithModels || [],
       bestWithMCP: initialData?.bestWithMCP || [],
+      workflowLink: initialData?.workflowLink || "",
     },
   });
 
@@ -544,7 +539,7 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
     title: string;
     description: string;
     content: string;
-    type: "TEXT" | "IMAGE" | "VIDEO" | "AUDIO" | "SKILL";
+    type: "TEXT" | "IMAGE" | "VIDEO" | "AUDIO" | "SKILL" | "TASTE";
     structuredFormat?: "JSON" | "YAML";
     categoryId?: string;
     tagIds: string[];
@@ -1083,6 +1078,7 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
                     </Button>
                   </div>
                 </div>
+
               </div>
             )}
           </div>
@@ -1098,7 +1094,7 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-3">
               <Select 
-                value={promptType === "SKILL" ? "SKILL" : (isStructuredInput ? "STRUCTURED" : "TEXT")} 
+                value={promptType === "SKILL" ? "SKILL" : promptType === "TASTE" ? "TASTE" : (isStructuredInput ? "STRUCTURED" : "TEXT")} 
                 onValueChange={(v) => {
                   if (v === "STRUCTURED") {
                     form.setValue("structuredFormat", "JSON");
@@ -1114,6 +1110,14 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
                     if (!currentContent || !currentContent.startsWith("---")) {
                       form.setValue("content", generateSkillContentWithFrontmatter(title, description));
                     }
+                  } else if (v === "TASTE") {
+                    form.setValue("structuredFormat", undefined);
+                    form.setValue("type", "TASTE");
+                    // Auto-generate placeholder taste content
+                    const currentContent = form.getValues("content");
+                    if (!currentContent || !currentContent.startsWith("# Taste")) {
+                      form.setValue("content", `# Taste\n- Package manager is npm (not pnpm or yarn). Confidence: 0.95\n- Use Next.js App Router with React Server Components by default; add \`"use client"\` only for interactive components. Confidence: 0.95\n`);
+                    }
                   } else {
                     form.setValue("structuredFormat", undefined);
                     form.setValue("type", "TEXT");
@@ -1127,6 +1131,7 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
                   <SelectItem value="TEXT">{t("inputTypes.text")}</SelectItem>
                   <SelectItem value="STRUCTURED">{t("inputTypes.structured")}</SelectItem>
                   <SelectItem value="SKILL">{t("inputTypes.skill")}</SelectItem>
+                  <SelectItem value="TASTE">{t("inputTypes.taste")}</SelectItem>
                 </SelectContent>
               </Select>
               {isStructuredInput && (
@@ -1274,8 +1279,8 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
             onConvert={(converted) => form.setValue("content", converted)}
           />
 
-          {/* Structured format detection warning - hide for SKILL type */}
-          {promptType !== "SKILL" && (
+          {/* Structured format detection warning - hide for SKILL and TASTE types */}
+          {promptType !== "SKILL" && promptType !== "TASTE" && (
             <StructuredFormatWarning
               content={promptContent}
               isStructuredInput={isStructuredInput}
@@ -1300,8 +1305,8 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
         </div>
 
         {/* ===== OUTPUT SECTION ===== */}
-        {promptType === "SKILL" ? (
-          /* SKILL type shows a code output preview - code generated BY the skill */
+        {(promptType === "SKILL" || promptType === "TASTE") ? (
+          /* SKILL/TASTE type shows a code output preview - code generated BY the skill/taste */
           <div className="space-y-4 py-6 border-t">
             <div className="space-y-1">
               <h2 className="text-base font-semibold">{t("outputType")}</h2>
@@ -1321,7 +1326,8 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
               </div>
               {/* Code output content */}
               <div className="p-4 text-xs space-y-1" style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace' }}>
-                <div><span className="text-[#6a9955]">// Code generated by skill...</span></div>
+                {/* eslint-disable-next-line react/jsx-no-comment-textnodes -- Intentional code preview text */}
+                <div><span className="text-[#6a9955]">// Code generated by skill, and your taste...</span></div>
                 <div><span className="text-[#c586c0]">export</span> <span className="text-[#569cd6]">function</span> <span className="text-[#dcdcaa]">handler</span><span className="text-[#d4d4d4]">()</span> <span className="text-[#d4d4d4]">{'{'}</span></div>
                 <div><span className="text-[#d4d4d4]">  </span><span className="text-[#c586c0]">return</span> <span className="text-[#ce9178]">&quot;...&quot;</span><span className="text-[#d4d4d4]">;</span></div>
                 <div><span className="text-[#d4d4d4]">{'}'}</span></div>
@@ -1432,6 +1438,34 @@ export function PromptForm({ categories, tags, initialData, initialContributors 
             </div>
           </div>
         )}
+
+        {/* ===== WORKFLOW LINK SECTION ===== */}
+        <div className="space-y-3 py-6 border-t">
+          <FormField
+            control={form.control}
+            name="workflowLink"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("workflowLink")}</FormLabel>
+                <FormDescription className="text-xs">
+                  {mode === "create" 
+                    ? t("workflowLinkCreateNote")
+                    : t("workflowLinkDescription")
+                  }
+                </FormDescription>
+                <FormControl>
+                  <Input 
+                    placeholder={t("workflowLinkPlaceholder")} 
+                    {...field} 
+                    disabled={mode === "create"}
+                    className={mode === "create" ? "opacity-50" : ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end gap-4 pt-2">
           <Button type="button" variant="outline" onClick={() => router.back()}>

@@ -22,7 +22,7 @@ import { VersionCompareModal } from "@/components/prompts/version-compare-modal"
 import { VersionCompareButton } from "@/components/prompts/version-compare-button";
 import { FeaturePromptButton } from "@/components/prompts/feature-prompt-button";
 import { UnlistPromptButton } from "@/components/prompts/unlist-prompt-button";
-import { MediaPreview } from "@/components/prompts/media-preview";
+import { UserExamplesSection } from "@/components/prompts/user-examples-section";
 import { DelistBanner } from "@/components/prompts/delist-banner";
 import { RestorePromptButton } from "@/components/prompts/restore-prompt-button";
 import { CommentSection } from "@/components/comments";
@@ -32,6 +32,7 @@ import { AddToCollectionButton } from "@/components/prompts/add-to-collection-bu
 import { getConfig } from "@/lib/config";
 import { StructuredData } from "@/components/seo/structured-data";
 import { AI_MODELS } from "@/lib/works-best-with";
+import { EzoicAd } from "@/components/ads/ezoic-ad";
 
 interface PromptPageProps {
   params: Promise<{ id: string }>;
@@ -206,6 +207,17 @@ export default async function PromptPage({ params }: PromptPageProps) {
   const relatedPrompts = relatedConnections
     .map((conn) => conn.target)
     .filter((p) => !p.isPrivate && !p.isUnlisted && !p.deletedAt);
+
+  // Check if prompt has flow connections (previous/next, not "related")
+  const flowConnectionCount = await db.promptConnection.count({
+    where: {
+      OR: [
+        { sourceId: id, label: { not: "related" } },
+        { targetId: id, label: { not: "related" } },
+      ],
+    },
+  });
+  const hasFlowConnections = flowConnectionCount > 0;
 
   if (!prompt) {
     notFound();
@@ -524,12 +536,16 @@ export default async function PromptPage({ params }: PromptPageProps) {
         </div>
 
         <TabsContent value="content" className="space-y-4 mt-0">
-          {/* Media Preview (for image/video prompts) */}
+          {/* Media Preview with User Examples (for image/video prompts) */}
           {prompt.mediaUrl && (
-            <MediaPreview 
+            <UserExamplesSection 
               mediaUrl={prompt.mediaUrl} 
               title={prompt.title} 
-              type={prompt.type} 
+              type={prompt.type}
+              promptId={prompt.id}
+              isLoggedIn={!!session?.user}
+              currentUserId={session?.user?.id}
+              isAdmin={isAdmin}
             />
           )}
 
@@ -554,6 +570,18 @@ export default async function PromptPage({ params }: PromptPageProps) {
                 content={prompt.content} 
                 promptId={prompt.id}
                 promptSlug={prompt.slug ?? undefined}
+              />
+            ) : prompt.type === "TASTE" ? (
+              <InteractivePromptContent 
+                content={prompt.content} 
+                title="taste.md"
+                isLoggedIn={!!session?.user}
+                promptId={prompt.id}
+                promptSlug={prompt.slug ?? undefined}
+                promptType={prompt.type}
+                shareTitle={prompt.title}
+                promptTitle={prompt.title}
+                promptDescription={prompt.description ?? undefined}
               />
             ) : prompt.structuredFormat ? (
               <InteractivePromptContent 
@@ -644,8 +672,8 @@ export default async function PromptPage({ params }: PromptPageProps) {
             </div>
           )}
 
-          {/* Report & Prompt Flow - hide for SKILL type */}
-          {prompt.type !== "SKILL" && (
+          {/* Report & Prompt Flow - hide for SKILL and TASTE types */}
+          {prompt.type !== "SKILL" && prompt.type !== "TASTE" && (
             <PromptFlowSection
               promptId={prompt.id}
               promptTitle={prompt.title}
@@ -654,6 +682,8 @@ export default async function PromptPage({ params }: PromptPageProps) {
               isLoggedIn={!!session?.user}
               currentUserId={session?.user?.id}
               isAdmin={isAdmin}
+              workflowLink={(prompt as unknown as { workflowLink?: string | null }).workflowLink}
+              hasFlowConnections={hasFlowConnections}
             />
           )}
 
@@ -672,6 +702,9 @@ export default async function PromptPage({ params }: PromptPageProps) {
               locale={locale}
             />
           )}
+
+          {/* Ad Placement */}
+          {process.env.NEXT_PUBLIC_EZOIC_ENABLED === "true" && <EzoicAd id={201} />}
         </TabsContent>
 
         <TabsContent value="versions" className="mt-0">

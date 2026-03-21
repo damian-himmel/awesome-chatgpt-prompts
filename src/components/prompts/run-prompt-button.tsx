@@ -49,7 +49,7 @@ const imagePlatforms: Platform[] = [
     id: "mitte-image",
     name: "Mitte.ai",
     baseUrl: "https://mitte.ai",
-    sponsor: true,
+    sponsor: false,
     subOptions: [
       { name: "Nano Banana", baseUrl: "https://mitte.ai?model=nano-banana" },
       { name: "Nano Banana Pro", baseUrl: "https://mitte.ai?model=nano-banana-pro" },
@@ -65,7 +65,7 @@ const videoPlatforms: Platform[] = [
     id: "mitte-video",
     name: "Mitte.ai",
     baseUrl: "https://mitte.ai",
-    sponsor: true,
+    sponsor: false,
     subOptions: [
       { name: "Veo 3.1", baseUrl: "https://mitte.ai?model=veo-31" },
       { name: "Kling 2.6", baseUrl: "https://mitte.ai?model=kling-26" },
@@ -316,6 +316,7 @@ export function RunPromptButton({
       if (url.startsWith("http://") || url.startsWith("https://")) {
         window.open(url, "_blank");
       } else {
+        // eslint-disable-next-line react-hooks/immutability -- Valid browser navigation for custom URL schemes
         window.location.href = url;
       }
       analyticsPrompt.run(promptId, platform.name);

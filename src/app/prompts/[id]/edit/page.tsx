@@ -87,7 +87,7 @@ export default async function EditPromptPage({ params }: EditPromptPageProps) {
     title: prompt.title,
     description: prompt.description || "",
     content: prompt.content,
-    type: ((prompt.type === "IMAGE" || prompt.type === "VIDEO" || prompt.type === "AUDIO" || prompt.type === "SKILL") ? prompt.type : "TEXT") as "TEXT" | "IMAGE" | "VIDEO" | "AUDIO" | "SKILL",
+    type: ((prompt.type === "IMAGE" || prompt.type === "VIDEO" || prompt.type === "AUDIO" || prompt.type === "SKILL" || prompt.type === "TASTE") ? prompt.type : "TEXT") as "TEXT" | "IMAGE" | "VIDEO" | "AUDIO" | "SKILL" | "TASTE",
     structuredFormat: prompt.structuredFormat ? (prompt.structuredFormat as "JSON" | "YAML") : undefined,
     categoryId: prompt.categoryId || undefined,
     tagIds: prompt.tags.map((t) => t.tagId),
@@ -98,6 +98,7 @@ export default async function EditPromptPage({ params }: EditPromptPageProps) {
     requiredMediaCount: prompt.requiredMediaCount || 1,
     bestWithModels: (prompt as unknown as { bestWithModels?: string[] }).bestWithModels || [],
     bestWithMCP: (prompt as unknown as { bestWithMCP?: { command: string; tools?: string[] }[] }).bestWithMCP || [],
+    workflowLink: (prompt as unknown as { workflowLink?: string }).workflowLink || "",
   };
 
   // Check if AI generation is enabled

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Masonry } from "@/components/ui/masonry";
 import { PromptCard } from "@/components/prompts/prompt-card";
+import { EzoicAd } from "@/components/ads/ezoic-ad";
 
 interface DiscoveryPromptsProps {
   isHomepage?: boolean;
@@ -34,7 +35,12 @@ export async function DiscoveryPrompts({ isHomepage = false }: DiscoveryPromptsP
       select: { id: true, username: true, name: true, avatar: true },
     },
     _count: {
-      select: { votes: true, contributors: true, outgoingConnections: true, incomingConnections: true },
+      select: {
+        votes: true,
+        contributors: true,
+        outgoingConnections: { where: { label: { not: "related" } } },
+        incomingConnections: { where: { label: { not: "related" } } },
+      },
     },
   };
 
@@ -152,6 +158,15 @@ export async function DiscoveryPrompts({ isHomepage = false }: DiscoveryPromptsP
         </section>
       )}
 
+      {/* Ad Placement - after featured */}
+      {isHomepage && process.env.NEXT_PUBLIC_EZOIC_ENABLED === "true" && (
+        <section className="py-8 border-b">
+          <div className="container max-w-2xl">
+            <EzoicAd id={202} />
+          </div>
+        </section>
+      )}
+
       {/* Today's Most Upvoted Section */}
       {todaysMostUpvoted.length > 0 && (
         <section className={isHomepage ? "py-12 border-b" : "pb-8 mb-8 border-b"}>
@@ -198,6 +213,15 @@ export async function DiscoveryPrompts({ isHomepage = false }: DiscoveryPromptsP
                 <PromptCard key={prompt.id} prompt={prompt} />
               ))}
             </Masonry>
+          </div>
+        </section>
+      )}
+
+      {/* Ad Placement - after latest */}
+      {isHomepage && process.env.NEXT_PUBLIC_EZOIC_ENABLED === "true" && (
+        <section className="py-8 border-b">
+          <div className="container max-w-2xl">
+            <EzoicAd id={203} />
           </div>
         </section>
       )}
